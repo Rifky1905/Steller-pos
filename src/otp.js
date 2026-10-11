@@ -48,7 +48,7 @@ export const sendOtpEmail = async (toEmail, code, name) => {
 
 // Kirim pesan WhatsApp generik via Fonnte; fallback ke nomor admin jika target kosong
 export const sendWhatsApp = async (target, message) => {
-  const token = import.meta.env.VITE_FONNTE_TOKEN
+  const token = (import.meta.env.VITE_FONNTE_TOKEN || '').trim()
   if (!token) {
     return { ok: false, unconfigured: true, error: 'Gateway WhatsApp belum dikonfigurasi (isi VITE_FONNTE_TOKEN di .env)' }
   }
@@ -56,13 +56,16 @@ export const sendWhatsApp = async (target, message) => {
     const res = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
       headers: { Authorization: token },
-      body: new URLSearchParams({ target: target || ADMIN_WA, message }),
+      body: new URLSearchParams({ target: normalizePhone(target || ADMIN_WA), message }),
     })
     const json = await res.json().catch(() => ({}))
-    if (res.ok && json.status !== false) return { ok: true }
-    return { ok: false, error: json.reason || `Fonnte error HTTP ${res.status}` }
+    if (res.ok && json.status === true) return { ok: true }
+    const reason = json.reason || json.detail || `Fonnte error HTTP ${res.status}`
+    console.error('[Fonnte] kirim gagal:', res.status, json)
+    return { ok: false, error: reason }
   } catch (e) {
-    return { ok: false, error: 'Gagal terhubung ke gateway WhatsApp: ' + e.message }
+    console.error('[Fonnte] network error:', e)
+    return { ok: false, error: 'Gagal terhubung ke gateway WhatsApp (cek koneksi/CORS): ' + e.message }
   }
 }
 

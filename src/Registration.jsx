@@ -328,7 +328,7 @@ function Registration() {
     } else if (res.unconfigured) {
       setOtpStatus({
         type: 'warn',
-        text: `Layanan otomatis belum aktif — minta kode manual ke admin via tombol di bawah.`,
+        text: `⚠️ Layanan otomatis belum aktif (token belum terbaca). Minta kode manual ke admin via tombol WhatsApp di bawah.`,
       })
     } else {
       setOtpStatus({ type: 'error', text: `❌ Gagal mengirim kode (${res.error}). Coba lagi atau minta manual ke admin.` })
@@ -823,10 +823,20 @@ function Registration() {
                 </div>
               )}
 
-              {/* Fallback kontak admin */}
-              <div className="mb-6 text-xs text-gray-500">
-                Kode tidak masuk? Tekan tombol kirim ulang di atas, atau hubungi admin WhatsApp di{' '}
-                <span className="font-semibold text-gray-700">0858-9317-4442</span>
+              {/* Fallback kontak admin — tombol langsung chat WA dengan pesan terisi */}
+              <div className="mb-6">
+                <a
+                  href={`https://wa.me/6285893174442?text=${encodeURIComponent(`Halo Admin StellerPOS! Saya ${form.ownerName} dari ${form.storeName}. Mohon kirimkan kode verifikasi akun saya (${form.email} / ${form.whatsapp}). Terima kasih.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-full py-3 border-2 border-green-500 text-green-600 rounded-lg font-semibold text-sm hover:bg-green-50 transition"
+                >
+                  💬 Minta Kode Manual via WhatsApp Admin
+                </a>
+                <p className="mt-2 text-xs text-gray-500">
+                  Kode tidak masuk? Tekan tombol kirim ulang di atas, atau hubungi admin di{' '}
+                  <span className="font-semibold text-gray-700">0858-9317-4442</span>
+                </p>
               </div>
 
               <div className="mb-4">
