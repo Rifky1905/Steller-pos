@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Cetak struk POS: hanya kertas struk yang tercetak.
+   Lebar kertas diatur dinamis via inline style + @page yang di-inject komponen POS
+   (58mm / 80mm sesuai Pengaturan Toko). */
+@page {
+  size: 58mm auto;
+  margin: 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt-print, #receipt-print * {
+    visibility: visible;
+  }
+  #receipt-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    max-width: none;
+    border: none;
+    padding: 0;
+    font-size: 10px;
+  }
+}
