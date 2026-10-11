@@ -46,17 +46,37 @@ export const sendOtpEmail = async (toEmail, code, name) => {
   }
 }
 
+// Kirim via Vercel Serverless Function /api/send-wa — dipakai di production
+// saat token hanya ada di server (FONNTE_TOKEN, tidak terekspos ke browser)
+const sendWhatsAppViaApi = async (to, message) => {
+  try {
+    const res = await fetch('/api/send-wa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: to, message }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.status === true) return { ok: true }
+    if (res.status === 404) {
+      return { ok: false, unconfigured: true, error: 'Endpoint /api/send-wa tidak ditemukan (deploy ke Vercel atau isi VITE_FONNTE_TOKEN untuk dev lokal)' }
+    }
+    return { ok: false, error: json.reason || json.detail || json.error || `Gateway error HTTP ${res.status}` }
+  } catch (e) {
+    return { ok: false, error: 'Gagal terhubung ke endpoint pengirim WA: ' + e.message }
+  }
+}
+
 // Kirim pesan WhatsApp generik via Fonnte; fallback ke nomor admin jika target kosong
 export const sendWhatsApp = async (target, message) => {
+  const to = normalizePhone(target || ADMIN_WA)
   const token = (import.meta.env.VITE_FONNTE_TOKEN || '').trim()
-  if (!token) {
-    return { ok: false, unconfigured: true, error: 'Gateway WhatsApp belum dikonfigurasi (isi VITE_FONNTE_TOKEN di .env)' }
-  }
+  // Production: token hanya di server → lewat /api/send-wa. Dev lokal: pakai token langsung.
+  if (!token) return sendWhatsAppViaApi(to, message)
   try {
     const res = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
       headers: { Authorization: token },
-      body: new URLSearchParams({ target: normalizePhone(target || ADMIN_WA), message }),
+      body: new URLSearchParams({ target: to, message }),
     })
     const json = await res.json().catch(() => ({}))
     if (res.ok && json.status === true) return { ok: true }
