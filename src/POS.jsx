@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { supabase } from './supabaseClient'
 import { buildDynamicQris } from './qris'
+import SubscriptionLock, { useSubscriptionLock } from './SubscriptionLock'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -36,6 +37,7 @@ const StellerLogo = ({ className = "" }) => (
 
 function POS() {
   const navigate = useNavigate()
+  const subLock = useSubscriptionLock()
   const [searchTerm, setSearchTerm] = useState('')
   const [trxCode, setTrxCode] = useState(() => `TRX-${Math.floor(10000 + Math.random() * 90000)}`)
   const merchantSession = (() => {
@@ -906,6 +908,7 @@ function POS() {
           </div>
         </div>
       )}
+      {subLock?.locked && <SubscriptionLock endDate={subLock.endDate} reason={subLock.reason} />}
     </div>
   )
 }

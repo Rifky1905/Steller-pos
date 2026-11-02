@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
+import SubscriptionLock, { useSubscriptionLock } from './SubscriptionLock'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -34,6 +35,7 @@ const StellerLogo = ({ className = "" }) => (
 
 function SalesReports() {
   const navigate = useNavigate()
+  const subLock = useSubscriptionLock()
 
   const handleMenuClick = (path) => {
     if (path === '/pos') {
@@ -455,6 +457,7 @@ function SalesReports() {
             </table>
           </div>
         </div>
+        {subLock?.locked && <SubscriptionLock endDate={subLock.endDate} reason={subLock.reason} />}
       </main>
     </div>
   )

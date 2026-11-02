@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
+import SubscriptionLock, { useSubscriptionLock } from './SubscriptionLock'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -34,6 +35,7 @@ const StellerLogo = ({ className = "" }) => (
 
 function EmployeeManagement() {
   const navigate = useNavigate()
+  const subLock = useSubscriptionLock()
 
   // Merchant yang belum aktif tidak boleh membuka manajemen karyawan
   useEffect(() => {
@@ -475,6 +477,7 @@ function EmployeeManagement() {
             </div>
           </div>
         )}
+        {subLock?.locked && <SubscriptionLock endDate={subLock.endDate} reason={subLock.reason} />}
       </main>
     </div>
   )

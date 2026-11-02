@@ -222,7 +222,8 @@ function SubscriptionPayment() {
   }
 
   const isPendingConfirm = merchant?.payment_status === 'pending_confirmation'
-  const isActive = merchant?.status === 'active'
+  const isExpired = merchant?.status === 'active' && merchant?.end_date && new Date(merchant.end_date) <= new Date()
+  const isActive = merchant?.status === 'active' && !isExpired
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -266,6 +267,20 @@ function SubscriptionPayment() {
             ))}
           </div>
         </div>
+
+        {/* Pemberitahuan langganan berakhir — fitur terkunci sampai dibayar */}
+        {isExpired && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-5 mb-6 flex items-center space-x-3">
+            <span className="text-3xl">⛔</span>
+            <div>
+              <h3 className="font-bold text-red-700">Langganan Anda Telah Berakhir</h3>
+              <p className="text-sm text-red-600">
+                Masa aktif habis pada {new Date(merchant.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                Lakukan pembayaran di bawah untuk membuka kembali semua fitur toko.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ===== Langganan sudah aktif ===== */}
         {isActive ? (

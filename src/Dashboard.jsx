@@ -126,6 +126,9 @@ function Dashboard() {
     }
   })()
 
+  // Langganan berakhir: status masih 'active' tapi end_date sudah lewat → fitur terkunci
+  const subscriptionExpired = !!merchant?.endDate && subscription.daysRemaining <= 0
+
   const plans = [
     { name: '1 Bulan', price: 'Rp 100.000', priceValue: 100000, discount: null },
     { name: '3 Bulan', price: 'Rp 280.000', priceValue: 280000, discount: 'Hemat Rp 20.000' },
@@ -496,6 +499,28 @@ function Dashboard() {
 
         {/* Dashboard Content */}
         <div className="p-8">
+          {/* Peringatan langganan berakhir — fitur penting terkunci */}
+          {subscriptionExpired && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-xl p-5 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">⛔</span>
+                <div>
+                  <h3 className="font-bold text-red-700">Langganan Anda Telah Berakhir</h3>
+                  <p className="text-sm text-red-600">
+                    Masa aktif habis pada {new Date(subscription.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                    Fitur Kasir, Inventaris, Laporan, Karyawan &amp; Pengaturan dikunci sampai Anda memperpanjang.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRenewModal(true)}
+                className="shrink-0 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition"
+              >
+                💳 Perpanjang Sekarang
+              </button>
+            </div>
+          )}
+
           {/* Subscription Info Banner */}
           <div className="bg-gradient-to-r from-navy-600 to-navy-700 rounded-xl p-6 mb-8">
             <div className="flex flex-col md:flex-row items-center justify-between">
@@ -1017,7 +1042,9 @@ function Dashboard() {
                   [
                     '📅 Status Langganan',
                     merchant
-                      ? (merchant.status === 'active' ? `Aktif — sisa ${subscription.daysRemaining} hari` : merchant.status)
+                      ? (merchant.status === 'active'
+                          ? (subscriptionExpired ? '⛔ Expired — segera perpanjang' : `Aktif — sisa ${subscription.daysRemaining} hari`)
+                          : merchant.status)
                       : 'Demo (tidak terbatas)',
                   ],
                   ['🗓 Berakhir', new Date(subscription.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })],
