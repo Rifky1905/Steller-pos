@@ -60,3 +60,36 @@ export const buildDynamicQris = (payload, amount) => {
 
   return body + '6304' + crc16ccitt(body + '6304')
 }
+
+// Baca info merchant dari payload QRIS (tag 59 nama, tag 60 kota, NMID di sub-tag 51)
+// Dipakai untuk menampilkan label resmi di sekitar QR hasil generate
+export const parseQrisInfo = (payload) => {
+  const info = {}
+  if (!payload || typeof payload !== 'string' || !payload.startsWith('000201')) return info
+  const readTl = (s, start) => {
+    const tag = s.slice(start, start + 2)
+    const len = parseInt(s.slice(start + 2, start + 4), 10)
+    return { tag, len, val: s.slice(start + 4, start + 4 + len), next: start + 4 + len }
+  }
+  try {
+    let i = 0
+    const s = payload.trim()
+    while (i + 4 <= s.length) {
+      const { tag, len, val, next } = readTl(s, i)
+      if (Number.isNaN(len) || next > s.length) break
+      if (tag === '59') info.merchant = val
+      if (tag === '60') info.city = val
+      if (tag === '51') {
+        let j = 0
+        while (j + 4 <= val.length) {
+          const st = readTl(val, j)
+          if (Number.isNaN(st.len) || st.next > val.length) break
+          if (st.tag === '02') info.nmid = st.val
+          j = st.next
+        }
+      }
+      i = next
+    }
+  } catch { /* payload tak terduga — kembalikan info parsial */ }
+  return info
+}

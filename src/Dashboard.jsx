@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { supabase } from './supabaseClient'
-import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD } from './qris'
+import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD, parseQrisInfo } from './qris'
 import { sendOtpWhatsApp, notifyAdminPayment, notifySubscriptionReminder } from './otp'
 import { fetchPlans, DEFAULT_PLANS, formatRupiah } from './plans'
 import SubscriptionLock from './SubscriptionLock'
@@ -171,6 +171,8 @@ function Dashboard() {
       .catch(() => setDynamicQrisUrl(''))
   }, [platformPay.qrisPayload, selectedPlanData?.priceValue])
   const qrisDisplayUrl = dynamicQrisUrl || platformPay.qrisImage
+  // Info merchant dari payload — label resmi di sekitar QR
+  const qrisInfo = parseQrisInfo(platformPay.qrisPayload || DEFAULT_PLATFORM_QRIS_PAYLOAD)
 
   // Nominal dibayar otomatis mengikuti paket yang dipilih
   useEffect(() => {
@@ -884,7 +886,18 @@ function Dashboard() {
                     <div className="border border-slate-200 rounded-xl p-5 mb-5 text-center">
                       <p className="text-sm text-gray-600 mb-3">Scan kode QR di bawah dengan aplikasi e-wallet atau m-banking Anda:</p>
                       {qrisDisplayUrl ? (
-                        <img src={qrisDisplayUrl} alt="QRIS StellerPOS" className="w-64 h-64 sm:w-72 sm:h-72 mx-auto object-contain mb-3 border-4 border-slate-800 rounded-lg bg-white" />
+                        <div className="w-64 sm:w-72 mx-auto mb-3 bg-white border-4 border-slate-800 rounded-xl overflow-hidden">
+                          <div className="px-3 py-1.5 border-b border-slate-200 text-left">
+                            <span className="font-black italic text-xl text-red-600 tracking-wide">QRIS</span>
+                          </div>
+                          <img src={qrisDisplayUrl} alt="QRIS StellerPOS" className="w-full object-contain bg-white" />
+                          <div className="px-3 py-2 border-t border-slate-200 text-left">
+                            <p className="text-[11px] font-bold text-gray-900">{qrisInfo.merchant || 'StellerPOS'}</p>
+                            <p className="text-[10px] text-gray-500">
+                              {[qrisInfo.city, qrisInfo.nmid ? `NMID: ${qrisInfo.nmid}` : null].filter(Boolean).join(' · ') || 'QRIS Standar GPN'}
+                            </p>
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-64 h-64 mx-auto bg-slate-100 border-4 border-slate-800 rounded-lg flex items-center justify-center mb-3">
                           <p className="text-xs text-gray-400 px-4">QRIS belum diupload oleh Super Admin</p>
