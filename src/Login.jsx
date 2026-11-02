@@ -210,7 +210,7 @@ function Login() {
       setLoginError('Akun toko dinonaktifkan. Hubungi admin platform StellerPOS.')
       return
     }
-    if (merchant.status !== 'active' || (merchant.end_date && new Date(merchant.end_date) <= new Date())) {
+    if (merchant.status !== 'active') {
       navigate('/subscription-payment')
       return
     }

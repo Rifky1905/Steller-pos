@@ -1,7 +1,7 @@
 // Penjaga langganan — kunci fitur penting saat masa aktif habis.
 // Dipakai oleh: POS, Inventaris, Laporan, Karyawan, Pengaturan, Dashboard (banner).
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
 export const isSubExpired = (endDate) => !!endDate && new Date(endDate).getTime() <= Date.now()
@@ -57,6 +57,8 @@ export function useSubscriptionLock(merchantId) {
 // Overlay full-screen yang menutup halaman terkunci
 export default function SubscriptionLock({ endDate, reason }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const onDashboard = location.pathname === '/dashboard'
   const endLabel = endDate
     ? new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -81,12 +83,14 @@ export default function SubscriptionLock({ endDate, reason }) {
         >
           💳 Perpanjang Langganan Sekarang
         </button>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="w-full mt-3 py-3 bg-slate-100 text-gray-700 rounded-lg font-semibold hover:bg-slate-200 transition"
-        >
-          ← Kembali ke Dashboard
-        </button>
+        {!onDashboard && (
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full mt-3 py-3 bg-slate-100 text-gray-700 rounded-lg font-semibold hover:bg-slate-200 transition"
+          >
+            ← Kembali ke Dashboard
+          </button>
+        )}
         <p className="mt-5 text-xs text-gray-500">
           Sudah bayar tapi masih terkunci? Tunggu verifikasi admin atau hubungi{' '}
           <a href="https://wa.me/6285893174442" target="_blank" rel="noopener noreferrer" className="font-semibold text-green-600 hover:underline">

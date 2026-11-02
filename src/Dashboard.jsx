@@ -5,6 +5,7 @@ import { supabase } from './supabaseClient'
 import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD } from './qris'
 import { sendOtpWhatsApp, notifyAdminPayment, notifySubscriptionReminder } from './otp'
 import { fetchPlans, DEFAULT_PLANS, formatRupiah } from './plans'
+import SubscriptionLock from './SubscriptionLock'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -1122,6 +1123,8 @@ function Dashboard() {
           </div>
         )}
       </main>
+      {/* Langganan berakhir → semua konten tertutup layar kunci */}
+      {subscriptionExpired && <SubscriptionLock endDate={subscription.endDate} reason="expired" />}
     </div>
   )
 }
