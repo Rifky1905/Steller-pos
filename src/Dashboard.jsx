@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { supabase } from './supabaseClient'
 import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD } from './qris'
@@ -264,6 +264,12 @@ function Dashboard() {
 
   const [transactions, setTransactions] = useState([])
   const [products, setProducts] = useState([])
+
+  // Buka modal perpanjangan otomatis saat diarahkan dari layar kunci (?renew=1)
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('renew') === '1') setShowRenewModal(true)
+  }, [searchParams])
 
   // Guard: merchant yang belum aktif langganannya diarahkan ke halaman pembayaran
   useEffect(() => {
@@ -732,7 +738,7 @@ function Dashboard() {
 
         {/* Renew Subscription Modal */}
         {showRenewModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1100] p-4">
             <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -1124,7 +1130,7 @@ function Dashboard() {
         )}
       </main>
       {/* Langganan berakhir → semua konten tertutup layar kunci */}
-      {subscriptionExpired && <SubscriptionLock endDate={subscription.endDate} reason="expired" />}
+      {subscriptionExpired && !showRenewModal && <SubscriptionLock endDate={subscription.endDate} reason="expired" onRenew={() => setShowRenewModal(true)} />}
     </div>
   )
 }

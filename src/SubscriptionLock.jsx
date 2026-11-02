@@ -55,19 +55,18 @@ export function useSubscriptionLock(merchantId) {
 }
 
 // Overlay full-screen yang menutup halaman terkunci
-export default function SubscriptionLock({ endDate, reason }) {
+export default function SubscriptionLock({ endDate, reason, onRenew }) {
   const navigate = useNavigate()
   const location = useLocation()
   const onDashboard = location.pathname === '/dashboard'
   const endLabel = endDate
     ? new Date(endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
+  // Perpanjangan lewat modal di Dashboard — ?renew=1 membuka modal otomatis
+  const handleRenew = onRenew || (() => navigate('/dashboard?renew=1'))
   return (
     <div className="fixed inset-0 z-[999] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
-        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
-          <span className="text-4xl">🔒</span>
-        </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Fitur Terkunci</h2>
         <p className="text-sm text-gray-600 mb-1">
           {reason === 'expired'
@@ -78,10 +77,10 @@ export default function SubscriptionLock({ endDate, reason }) {
           Perpanjang langganan untuk membuka kembali Kasir, Inventaris, Laporan, Karyawan, dan Pengaturan.
         </p>
         <button
-          onClick={() => navigate('/subscription-payment')}
+          onClick={handleRenew}
           className="w-full py-4 bg-navy-600 text-white rounded-lg font-semibold text-lg hover:bg-navy-700 transition shadow-lg"
         >
-          💳 Perpanjang Langganan Sekarang
+          Perpanjang Langganan Sekarang
         </button>
         {!onDashboard && (
           <button
