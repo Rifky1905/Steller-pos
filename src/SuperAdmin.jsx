@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
 import { supabase } from './supabaseClient'
 import { notifySubscriptionApproved, notifyHardwareApproved, notifyHardwareShipped } from './otp'
+import { fetchPlans, savePlans, DEFAULT_PLANS } from './plans'
 
 // Steller Logo Component (versi terang untuk sidebar gelap)
 const StellerLogo = ({ className = "" }) => (
@@ -82,6 +83,8 @@ function SuperAdmin() {
   const [isSavingPay, setIsSavingPay] = useState(false)
   const [paySaveMsg, setPaySaveMsg] = useState('')
   const [isUploadingQr, setIsUploadingQr] = useState(false)
+  // Harga paket langganan — editable, disimpan ke platform_settings (key 'plans')
+  const [planList, setPlanList] = useState(DEFAULT_PLANS.map(p => ({ ...p, price: String(p.price) })))
 
   // Muat pengaturan pembayaran dari Supabase (fallback localStorage)
   useEffect(() => {
@@ -104,6 +107,7 @@ function SuperAdmin() {
       } catch { /* ignore */ }
     }
     loadPaySettings()
+    fetchPlans().then(p => setPlanList(p.map(x => ({ ...x, price: String(x.price) }))))
   }, [])
 
   // Decode gambar QR → ambil payload EMV mentah (untuk QRIS dinamis ber-nominal)
@@ -171,9 +175,12 @@ function SuperAdmin() {
     const { error } = await supabase
       .from('platform_settings')
       .upsert({ key: 'payment', value: paySettings, updated_at: new Date().toISOString() })
-    setPaySaveMsg(error
-      ? '⚠️ Tersimpan lokal saja — tabel platform_settings belum ada. Jalankan blok SQL baru di schema.sql'
-      : '✅ Pengaturan pembayaran tersimpan — langsung dipakai di halaman pembayaran member')
+    // Simpan juga harga paket — dipakai semua halaman pembayaran & QRIS dinamis
+    const plansToSave = planList.map(p => ({ name: p.name, price: parseInt(p.price, 10) || 0, days: p.days }))
+    const { error: planErr } = await savePlans(plansToSave)
+    setPaySaveMsg(error || planErr
+      ? '⚠️ Sebagian tersimpan lokal saja — tabel platform_settings belum ada. Jalankan blok SQL baru di schema.sql'
+      : '✅ Pengaturan pembayaran & harga paket tersimpan — langsung dipakai di halaman pembayaran member')
     setIsSavingPay(false)
     setTimeout(() => setPaySaveMsg(''), 5000)
   }
@@ -672,6 +679,36 @@ function SuperAdmin() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Harga Paket Langganan — editable, langsung mengunci nominal QRIS */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-1">💰 Harga Paket Langganan</h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  Harga ini langsung dipakai di halaman pendaftaran, pembayaran, dan <span className="font-semibold">nominal QRIS dinamis yang terkunci</span> — member tidak perlu input nominal.
+                </p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {planList.map((p, i) => (
+                    <div key={p.name} className="border border-slate-200 rounded-xl p-4">
+                      <p className="font-bold text-gray-900 text-sm mb-1">{p.name}</p>
+                      <p className="text-xs text-gray-400 mb-2">{p.days} hari</p>
+                      <div className="flex items-center">
+                        <span className="text-sm font-semibold text-gray-500 mr-1">Rp</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          value={p.price}
+                          onChange={(e) => setPlanList(prev => prev.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
+                          className="w-full px-2 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-navy-700"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-3">
+                  Klik <span className="font-semibold">💾 Simpan Pengaturan</span> di bawah untuk menerapkan. Tagihan yang sudah tercatat di merchant tidak ikut berubah.
+                </p>
               </div>
 
               {/* Upload QRIS */}

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { supabase } from './supabaseClient'
 import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD } from './qris'
 import { notifyAdminPayment } from './otp'
+import { fetchPlans, DEFAULT_PLANS } from './plans'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -35,16 +36,13 @@ const StellerLogo = ({ className = "" }) => (
   </svg>
 )
 
-const PLAN_PRICES = {
-  '1 Bulan': { price: 100000, days: 30 },
-  '3 Bulan': { price: 280000, days: 90 },
-  '6 Bulan': { price: 550000, days: 180 },
-  '1 Tahun': { price: 1000000, days: 365 },
-}
-
 function SubscriptionPayment() {
   const navigate = useNavigate()
   const [merchant, setMerchant] = useState(null)
+  // Harga paket dari Super Admin (platform_settings) — fallback default
+  const [plans, setPlans] = useState(DEFAULT_PLANS)
+  useEffect(() => { fetchPlans().then(setPlans) }, [])
+  const PLAN_PRICES = useMemo(() => Object.fromEntries(plans.map(p => [p.name, p])), [plans])
   const [platformPay, setPlatformPay] = useState({ transfer: true, qris: true, ewallet: false, qrisImage: '' })
   const [payMethod, setPayMethod] = useState('qris')
   const [selectedPlan, setSelectedPlan] = useState('')
@@ -354,18 +352,18 @@ function SubscriptionPayment() {
             {/* Pilihan paket — nominal tagihan mengikuti otomatis */}
             <h3 className="font-bold text-gray-900 mb-3">Pilih Paket Langganan</h3>
             <div className="grid grid-cols-2 gap-3 mb-5">
-              {Object.entries(PLAN_PRICES).map(([name, info]) => (
+              {plans.map((p) => (
                 <button
-                  key={name}
-                  onClick={() => setSelectedPlan(name)}
+                  key={p.name}
+                  onClick={() => setSelectedPlan(p.name)}
                   className={`p-3 rounded-xl border-2 text-left transition ${
-                    activePlan === name
+                    activePlan === p.name
                       ? 'border-navy-600 bg-navy-50'
                       : 'border-slate-200 hover:border-navy-300'
                   }`}
                 >
-                  <p className="font-semibold text-gray-900 text-sm">{name}</p>
-                  <p className="text-navy-600 font-bold">Rp {info.price.toLocaleString('id-ID')}</p>
+                  <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
+                  <p className="text-navy-600 font-bold">Rp {p.price.toLocaleString('id-ID')}</p>
                 </button>
               ))}
             </div>

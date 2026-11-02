@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import { generateOtp, sendOtpWhatsApp, normalizePhone } from './otp'
+import { fetchPlans, DEFAULT_PLANS, formatRupiah } from './plans'
 import './App.css'
 
 // Steller Logo Component
@@ -56,12 +57,7 @@ const INDONESIAN_CITIES = [
   'Manado', 'Bitung', 'Gorontalo', 'Kendari', 'Ambon', 'Ternate', 'Jayapura', 'Sorong',
 ]
 
-const PLAN_OPTIONS = [
-  { name: '1 Bulan', price: 100000, days: 30, priceLabel: 'Rp 100.000' },
-  { name: '3 Bulan', price: 280000, days: 90, priceLabel: 'Rp 280.000' },
-  { name: '6 Bulan', price: 550000, days: 180, priceLabel: 'Rp 550.000' },
-  { name: '1 Tahun', price: 1000000, days: 365, priceLabel: 'Rp 1.000.000', badge: '⭐ Paling Hemat' },
-]
+const PLAN_BADGES = { '1 Tahun': '⭐ Paling Hemat' }
 
 function Registration() {
   const navigate = useNavigate()
@@ -77,8 +73,12 @@ function Registration() {
     storeName: '', category: '', city: '',
   })
   const [selectedPlan, setSelectedPlan] = useState(
-    PLAN_OPTIONS.some(p => p.name === planParam) ? planParam : '1 Bulan'
+    DEFAULT_PLANS.some(p => p.name === planParam) ? planParam : '1 Bulan'
   )
+  // Harga paket dari Super Admin — fallback default
+  const [planList, setPlanList] = useState(DEFAULT_PLANS)
+  useEffect(() => { fetchPlans().then(setPlanList) }, [])
+  const PLAN_OPTIONS = planList.map(p => ({ ...p, priceLabel: formatRupiah(p.price), badge: PLAN_BADGES[p.name] || null }))
   const [includeDemo, setIncludeDemo] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')

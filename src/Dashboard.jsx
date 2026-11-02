@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { supabase } from './supabaseClient'
 import { buildDynamicQris, DEFAULT_PLATFORM_QRIS_PAYLOAD } from './qris'
 import { sendOtpWhatsApp, notifyAdminPayment, notifySubscriptionReminder } from './otp'
+import { fetchPlans, DEFAULT_PLANS, formatRupiah } from './plans'
 
 // Steller Logo Component
 const StellerLogo = ({ className = "" }) => (
@@ -103,15 +104,30 @@ function Dashboard() {
   const [proofUploading, setProofUploading] = useState(false)
   const [isSubmittingPay, setIsSubmittingPay] = useState(false)
 
+  // Paket langganan — harga dari Super Admin (platform_settings), fallback default
+  const [planList, setPlanList] = useState(DEFAULT_PLANS)
+  useEffect(() => { fetchPlans().then(setPlanList) }, [])
+  const MONTHS_BY_PLAN = { '1 Bulan': 1, '3 Bulan': 3, '6 Bulan': 6, '1 Tahun': 12 }
+  const monthlyBase = planList[0]?.price || 100000
+  const plans = planList.map(p => {
+    const months = MONTHS_BY_PLAN[p.name] || 1
+    const hemat = monthlyBase * months - p.price
+    return {
+      name: p.name,
+      price: formatRupiah(p.price),
+      priceValue: p.price,
+      discount: months > 1 && hemat > 0 ? `Hemat Rp ${hemat.toLocaleString('id-ID')}` : null,
+    }
+  })
+
   // Subscription info — dari data merchant jika login, fallback demo
-  const PLAN_PRICES = { '1 Bulan': 'Rp 100.000', '3 Bulan': 'Rp 280.000', '6 Bulan': 'Rp 550.000', '1 Tahun': 'Rp 1.000.000' }
   const subscription = (() => {
     if (merchant?.endDate) {
       const end = new Date(merchant.endDate)
       const days = Math.max(0, Math.ceil((end - new Date()) / 86400000))
       return {
         plan: merchant.plan,
-        price: PLAN_PRICES[merchant.plan] || '-',
+        price: plans.find(p => p.name === merchant.plan)?.price || '-',
         startDate: merchant.startDate || end.toISOString(),
         endDate: merchant.endDate,
         daysRemaining: days,
@@ -128,13 +144,6 @@ function Dashboard() {
 
   // Langganan berakhir: status masih 'active' tapi end_date sudah lewat → fitur terkunci
   const subscriptionExpired = !!merchant?.endDate && subscription.daysRemaining <= 0
-
-  const plans = [
-    { name: '1 Bulan', price: 'Rp 100.000', priceValue: 100000, discount: null },
-    { name: '3 Bulan', price: 'Rp 280.000', priceValue: 280000, discount: 'Hemat Rp 20.000' },
-    { name: '6 Bulan', price: 'Rp 550.000', priceValue: 550000, discount: 'Hemat Rp 50.000' },
-    { name: '1 Tahun', price: 'Rp 1.000.000', priceValue: 1000000, discount: 'Hemat Rp 200.000 (Paling Hemat)' },
-  ]
 
   const selectedPlanData = plans.find(p => p.name === selectedPlan)
 
@@ -439,7 +448,10 @@ function Dashboard() {
               }`}
             >
               <span className="text-xl">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1 text-left">{item.label}</span>
+              {subscriptionExpired && item.path !== '/dashboard' && (
+                <span title="Terkunci — perpanjang langganan">🔒</span>
+              )}
             </button>
           ))}
         </nav>
